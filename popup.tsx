@@ -1,6 +1,6 @@
 import { useState } from "react"
-import riftImage from "data-base64:~assets/rift.svg"
-import "./styles.css"
+import riftImage from "data-base64:~assets/rift.svg";
+import "./popup.css";
 
 function IndexPopup() {
   const [data, setData] = useState("")
