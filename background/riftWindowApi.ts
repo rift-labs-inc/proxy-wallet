@@ -1,27 +1,38 @@
- 
-
+import { GetProxyWalletArgs, GetProxyWalletResponse } from "./types";
+declare global {
+  interface Window {
+    rift: {
+      connected: boolean;
+      getProxyWallet: (args: GetProxyWalletArgs) => Promise<GetProxyWalletResponse>;
+    }
+  }
+}
 export default function riftWindowApi() {
-  // Here's an example where we can reference the window object
-  // and add a new property to it
-  window.rift = {
-    connected: true,
-    // you can call other functions from the injected script
-    // but they must be declared inside the injected function
-    // or be present in the global scope
-    createTransaction: async () => {
-      //receive info from content script   
-      const resp = window.postMessage({
+  function sendToBackgroundViaRelay<T>(method: string, params = {}): Promise<T> {
+    return new Promise<T>((resolve) => {
+      const messageId = Date.now().toString();
+      const messageListener = (event: MessageEvent) => {
+        if (event.data.target === "rift-page-response" && event.data.messageId === messageId) {
+          resolve(event.data.response as T);
+          window.removeEventListener("message", messageListener);
+        }
+      };
+      window.addEventListener("message", messageListener);
+      window.postMessage({
         data: {
-          method: "ping",
-          params: {} 
+          method,
+          params,
+          messageId,
         },
         target: "rift-inpage"
-      });
-      console.log("Transaction created", resp);
-    },
+      }, "*");
+    });
   }
-
-  // Here's an example where we show you can reference the DOM
-  // This console.log will show within the tab you injected into
-  console.log("Rift has been injected into this tab");
+  // this has to be built without any dependencies, so it can't be be programmatically created
+  window.rift = {
+    connected: true,
+    getProxyWallet: async (args: GetProxyWalletArgs): Promise<GetProxyWalletResponse> => 
+      await sendToBackgroundViaRelay<GetProxyWalletResponse>("getProxyWallet", args),
+  };
+  console.log("[MAIN] Rift has been injected...");
 }
