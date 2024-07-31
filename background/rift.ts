@@ -18,7 +18,8 @@ function generateP2WPKH() {
 export const RiftApi = {
   async getProxyWallet(args: GetProxyWalletArgs): Promise<GetProxyWalletResponse> {
     const storage = new SecureStorage();
-    await storage.setPassword("arbitrary??")
+    // TODO: Does this need to actually be encrypted with something secure?
+    await storage.setPassword("rift-exchange")
     const wallet = await storage.get("wallet");
     if (wallet) {
       return { address: JSON.parse(wallet).address };
