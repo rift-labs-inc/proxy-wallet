@@ -1,9 +1,13 @@
-import { GetProxyWalletArgs, GetProxyWalletResponse } from "./types";
+import {CreateRiftSwapArgs, GetRiftSwapStatusArgs, GetProxyWalletArgs, GetProxyWalletResponse, ProxyWalletStatus} from "./types";
 declare global {
   interface Window {
     rift: {
       connected: boolean;
       getProxyWallet: (args: GetProxyWalletArgs) => Promise<GetProxyWalletResponse>;
+      createRiftSwap: (args: CreateRiftSwapArgs) => Promise<ProxyWalletStatus>;
+      getRiftSwapStatus: (args: GetRiftSwapStatusArgs) => Promise<ProxyWalletStatus>;
+      getAllRiftSwapStatuses: () => Promise<ProxyWalletStatus[]>;
+      clearLocalSwaps: () => void;
     }
   }
 }
@@ -31,8 +35,15 @@ export default function riftWindowApi() {
   // this has to be built without any dependencies, so it can't be be programmatically created
   window.rift = {
     connected: true,
-    getProxyWallet: async (args: GetProxyWalletArgs): Promise<GetProxyWalletResponse> => 
+    getProxyWallet: async (args: GetProxyWalletArgs): Promise<GetProxyWalletResponse> =>
       await sendToBackgroundViaRelay<GetProxyWalletResponse>("getProxyWallet", args),
+    createRiftSwap: async (args: CreateRiftSwapArgs): Promise<ProxyWalletStatus> =>
+      await sendToBackgroundViaRelay<ProxyWalletStatus>("createRiftSwap", args),
+    getRiftSwapStatus: async (args: GetRiftSwapStatusArgs): Promise<ProxyWalletStatus> =>
+      await sendToBackgroundViaRelay<ProxyWalletStatus>("getRiftSwapStatus", args),
+    getAllRiftSwapStatuses: async (): Promise<ProxyWalletStatus[]> =>
+      await sendToBackgroundViaRelay<ProxyWalletStatus[]>("getAllRiftSwapStatuses"),
+    clearLocalSwaps: async () => await sendToBackgroundViaRelay<void>("clearLocalSwaps"),
   };
   console.log("[MAIN] Rift has been injected...");
 }

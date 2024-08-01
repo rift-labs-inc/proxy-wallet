@@ -11,12 +11,18 @@ dependencies:
   '@plasmohq/storage':
     specifier: ^1.11.0
     version: 1.11.0(react@18.2.0)
-  '@types/bitcoinjs-lib':
-    specifier: ^5.0.0
-    version: 5.0.0
+  '@scure/bip32':
+    specifier: ^1.4.0
+    version: 1.4.0
   bignumber.js:
     specifier: ^9.1.2
     version: 9.1.2
+  bip32:
+    specifier: ^4.0.0
+    version: 4.0.0
+  bip39:
+    specifier: ^3.1.0
+    version: 3.1.0
   bitcoinjs-lib:
     specifier: ^6.1.6
     version: 6.1.6
@@ -674,6 +680,12 @@ packages:
     requiresBuild: true
     dev: false
     optional: true
+
+  /@noble/curves@1.4.2:
+    resolution: {integrity: sha512-TavHr8qycMChk8UwMld0ZDRvatedkzWfH8IiaeGCfymOP5i0hSCozz9vHOL0nkwk7HRMlFnAiKpS2jrUmSybcw==}
+    dependencies:
+      '@noble/hashes': 1.4.0
+    dev: false
 
   /@noble/hashes@1.4.0:
     resolution: {integrity: sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==}
@@ -2252,6 +2264,18 @@ packages:
       config-chain: 1.1.13
     dev: false
 
+  /@scure/base@1.1.7:
+    resolution: {integrity: sha512-PPNYBslrLNNUQ/Yad37MHYsNQtK67EhWb6WtSvNLLPo7SdVZgkUjD6Dg+5On7zNwmskf8OX7I7Nx5oN+MIWE0g==}
+    dev: false
+
+  /@scure/bip32@1.4.0:
+    resolution: {integrity: sha512-sVUpc0Vq3tXCkDGYVWGIZTRfnvu8LoTDaev7vbwh0omSvVORONr960MQWdKqJDCReIEmTj3PAr73O3aoxz7OPg==}
+    dependencies:
+      '@noble/curves': 1.4.2
+      '@noble/hashes': 1.4.0
+      '@scure/base': 1.1.7
+    dev: false
+
   /@sindresorhus/is@5.6.0:
     resolution: {integrity: sha512-TV7t8GKYaJWsn00tFDqBw8+Uqmr8A0fRU1tvTQhyZzGv0sJCGRQL3JGMI3ucuKo3XIZdUP+Lx7/gh2t3lewy7g==}
     engines: {node: '>=14.16'}
@@ -2651,13 +2675,6 @@ packages:
     engines: {node: '>=10.13.0'}
     dev: false
 
-  /@types/bitcoinjs-lib@5.0.0:
-    resolution: {integrity: sha512-9zXjgmH2E8qEZ9gQ9GH+I6Cze3bweQbyXtR/X4RD3SdR5I4jdRPvmBrKmjegV3HZG03KNricjEoq+lQUtIXCKQ==}
-    deprecated: This is a stub types definition. bitcoinjs-lib provides its own type definitions, so you do not need this installed.
-    dependencies:
-      bitcoinjs-lib: 6.1.6
-    dev: false
-
   /@types/chrome@0.0.258:
     resolution: {integrity: sha512-vicJi6cg2zaFuLmLY7laG6PHBknjKFusPYlaKQ9Zlycskofy71rStlGvW07MUuqUIVorZf8k5KH+zeTTGcH2dQ==}
     dependencies:
@@ -2963,6 +2980,22 @@ packages:
   /bip174@2.1.1:
     resolution: {integrity: sha512-mdFV5+/v0XyNYXjBS6CQPLo9ekCx4gtKZFnJm5PMto7Fs9hTTDpkkzOB7/FtluRI6JbUUAu+snTYfJRgHLZbZQ==}
     engines: {node: '>=8.0.0'}
+    dev: false
+
+  /bip32@4.0.0:
+    resolution: {integrity: sha512-aOGy88DDlVUhspIXJN+dVEtclhIsfAUppD43V0j40cPTld3pv/0X/MlrZSZ6jowIaQQzFwP8M6rFU2z2mVYjDQ==}
+    engines: {node: '>=6.0.0'}
+    dependencies:
+      '@noble/hashes': 1.4.0
+      '@scure/base': 1.1.7
+      typeforce: 1.18.0
+      wif: 2.0.6
+    dev: false
+
+  /bip39@3.1.0:
+    resolution: {integrity: sha512-c9kiwdk45Do5GL0vJMe7tS95VjCii65mYAH7DfWl3uW8AVzXKQVUm64i3hzVybBDMp9r7j9iNxR85+ul8MdN/A==}
+    dependencies:
+      '@noble/hashes': 1.4.0
     dev: false
 
   /bitcoinjs-lib@6.1.6:
