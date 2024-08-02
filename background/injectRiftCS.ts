@@ -1,9 +1,9 @@
 import riftWindowApi from "./riftWindowApi";
 import messageRelay from "./messageRelay";
+import {RIFT_URL_PATTERN} from "./constants";
 
 export default function injectRiftCS() {
   const injectedTabs = {};
-  const riftUrlPattern = /^https?:\/\/(.+\.)?rift\.exchange/;
 
   const inject = async (tabId: number, func: () => void, world: chrome.scripting.ExecutionWorld) => {
     chrome.scripting.executeScript({
@@ -14,7 +14,7 @@ export default function injectRiftCS() {
   };
 
   function injectScripts(tabId: number, url: string) {
-    if (!riftUrlPattern.test(url)) {
+    if (!RIFT_URL_PATTERN.test(url)) {
       console.log(`Not injecting Rift into tab ${tabId}: URL doesn't match`);
       return;
     }

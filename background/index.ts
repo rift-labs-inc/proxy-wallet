@@ -1,3 +1,4 @@
+import {RIFT_URL_PATTERN} from "./constants";
 import injectRiftCS from "./injectRiftCS";
 import { RiftApi } from "./rift";
 
@@ -20,10 +21,9 @@ export async function dispatchRequest(data: { data: { method: string; params: an
   }
 }
 
-const riftUrlPattern = /^https?:\/\/(.+\.)?rift\.exchange/;
 
 chrome.runtime.onMessage.addListener((data, sender, sendResponse) => {
-  if (sender.tab && sender.tab.url && riftUrlPattern.test(sender.tab.url)) {
+  if (sender.tab && sender.tab.url && RIFT_URL_PATTERN.test(sender.tab.url)) {
     // Return true to indicate that we will be sending a response asynchronously
     dispatchRequest(data, sendResponse);
     return true;
