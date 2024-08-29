@@ -123,6 +123,7 @@ async function buildRiftPaymentTransaction(
   txid: string
   txSerialized: string
 }> {
+  try {
   const network = bitcoin.networks.bitcoin
 
   const totalLpSumBtc = liquidityProviders.reduce(
@@ -175,12 +176,16 @@ async function buildRiftPaymentTransaction(
   const tx = psbt.extractTransaction()
   const txid = tx.getId()
   const txHex = normalizeHexStr(tx.toBuffer().toString("hex"))
-
   return {
     txSerializedNoSegwit: reserializeNoSegwit(txHex),
     txid,
     txSerialized: txHex
   }
+  } catch (e) {
+    console.error(e);
+    throw e
+  }
+
 }
 
 async function estimateRiftPaymentTransactionFees(
@@ -188,15 +193,14 @@ async function estimateRiftPaymentTransactionFees(
   wallet: BitcoinWallet,
   mempoolApiHostname: string
 ): Promise<RiftSwapFees> {
-  let arbitrary_bytes_32_hex =
-    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  let arbitrary_bytes_32_hex = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
   let { txSerialized } = await buildRiftPaymentTransaction(
     arbitrary_bytes_32_hex,
     liquidityProviders,
     arbitrary_bytes_32_hex,
     0,
     wallet,
-    2 ** 64,
+    liquidityProviders.reduce((sum, lp) => sum + weiToSatoshi(lp.amount, lp.btcExchangeRate), 0)+1,
     0
   )
 
@@ -204,13 +208,18 @@ async function estimateRiftPaymentTransactionFees(
   // standard byte size for nonsegwit, minimized byte weight applied for segwit
   let virtualSize = txn.virtualSize()
 
+
   let feeRateQuote = await getBtcFeeRates(mempoolApiHostname)
+
+  let amount = liquidityProviders.reduce((sum, lp) => sum + weiToSatoshi(lp.amount, lp.btcExchangeRate), 0)
 
   return {
     virtualSize,
     feeRateQuote,
-    fastTotalAmount: feeRateQuote.fastestFee * virtualSize,
-    standardTotalAmount: feeRateQuote.economyFee * virtualSize
+    fastFeeAmount: feeRateQuote.fastestFee * virtualSize,
+    standardFeeAmount: feeRateQuote.economyFee * virtualSize,
+    fastTotalAmount: feeRateQuote.fastestFee * virtualSize + amount,
+    standardTotalAmount: feeRateQuote.economyFee * virtualSize + amount
   }
 }
 

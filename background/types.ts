@@ -38,6 +38,8 @@ export interface GetRiftSwapFeesArgs {
 export interface RiftSwapFees {
   virtualSize: number
   feeRateQuote: Fees
+  fastFeeAmount: number
+  standardFeeAmount: number
   fastTotalAmount: number
   standardTotalAmount: number
 }
