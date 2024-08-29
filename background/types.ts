@@ -1,18 +1,49 @@
-export interface GetProxyWalletArgs {
-
+export interface UTXOStatus {
+  confirmed: boolean
+  block_height: number
+  block_hash: string
+  block_time: number
 }
+
+export interface UTXO {
+  txid: string
+  vout: number
+  status: UTXOStatus
+  value: number
+}
+
+export interface Fees {
+  fastestFee: number
+  halfHourFee: number
+  hourFee: number
+  economyFee: number
+  minimumFee: number
+}
+
+export interface GetProxyWalletArgs {}
 export interface GetProxyWalletResponse {
   address: string
 }
 
 export interface LiquidityProvider {
-  amount: string;
-  btcExchangeRate: string;
+  amount: string
+  btcExchangeRate: string
   lockingScriptHex: string
 }
 
+export interface GetRiftSwapFeesArgs {
+  liquidityProviders: Array<LiquidityProvider>
+}
+
+export interface RiftSwapFees {
+  virtualSize: number
+  feeRateQuote: Fees
+  fastTotalAmount: number
+  standardTotalAmount: number
+}
+
 export interface CreateRiftSwapArgs {
-  orderNonceHex: string,
+  orderNonceHex: string
   liquidityProviders: Array<LiquidityProvider>
 }
 
@@ -26,7 +57,7 @@ export enum SwapStatus {
 }
 
 export interface ProxyWalletStatus {
-  status: SwapStatus;
-  paymentTxid: string;
-  internalId: string;
+  status: SwapStatus
+  paymentTxid: string
+  internalId: string
 }

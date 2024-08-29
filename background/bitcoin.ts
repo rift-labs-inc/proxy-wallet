@@ -1,84 +1,111 @@
-import * as bitcoin from 'bitcoinjs-lib';
-import BigNumber from 'bignumber.js';
-import {ec as EC} from 'elliptic';
-import {CreateRiftSwapArgs, LiquidityProvider, SwapStatus} from './types';
-import {broadcastTransaction, fetchAddressUTXOs, fetchSerializedTransactionData} from './mempoolApi';
-import * as bip39 from 'bip39';
-import {HDKey} from '@scure/bip32';
-import {MAX_RESERVATION_DURATION, UTXO_POLLING_INTERVAL} from './constants';
-import * as storage from './db';
+import { HDKey } from "@scure/bip32"
+import BigNumber from "bignumber.js"
+import * as bip39 from "bip39"
+import * as bitcoin from "bitcoinjs-lib"
+import { ec as EC } from "elliptic"
 
-const ec = new EC('secp256k1');
+import { MAX_RESERVATION_DURATION, UTXO_POLLING_INTERVAL } from "./constants"
+import * as storage from "./db"
+import {
+  broadcastTransaction,
+  fetchAddressUTXOs,
+  fetchSerializedTransactionData,
+  getBtcFeeRates
+} from "./mempoolApi"
+import {
+  CreateRiftSwapArgs,
+  LiquidityProvider,
+  RiftSwapFees,
+  SwapStatus
+} from "./types"
 
+const ec = new EC("secp256k1")
 
 export function generateP2WPKH(existingMnemonic = null) {
-  const network = bitcoin.networks.bitcoin;
-  const mnemonic = existingMnemonic || bip39.generateMnemonic();
-  const seed = bip39.mnemonicToSeedSync(mnemonic);
-  const root = HDKey.fromMasterSeed(seed);
-  const child = root.derive("m/84'/0'/0'/0/0");
-  const publicKey = Buffer.from(child.publicKey);
-  const privateKey = Buffer.from(child.privateKey).toString('hex');
-  const {address} = bitcoin.payments.p2wpkh({pubkey: publicKey, network});
-  return {mnemonic, address, privateKey};
+  const network = bitcoin.networks.bitcoin
+  const mnemonic = existingMnemonic || bip39.generateMnemonic()
+  const seed = bip39.mnemonicToSeedSync(mnemonic)
+  const root = HDKey.fromMasterSeed(seed)
+  const child = root.derive("m/84'/0'/0'/0/0")
+  const publicKey = Buffer.from(child.publicKey)
+  const privateKey = Buffer.from(child.privateKey).toString("hex")
+  const { address } = bitcoin.payments.p2wpkh({ pubkey: publicKey, network })
+  return { mnemonic, address, privateKey }
 }
-
 
 interface BitcoinWallet {
-  address: string;
-  unlockScript: string;
-  publicKey: string;
-  hdKey: HDKey;
+  address: string
+  unlockScript: string
+  publicKey: string
+  hdKey: HDKey
 }
 
-
 function normalizeHexStr(hex: string): string {
-  return hex.startsWith('0x') ? hex.slice(2) : hex;
+  return hex.startsWith("0x") ? hex.slice(2) : hex
 }
 
 function weiToSatoshi(weiAmount: string, weiSatsExchangeRate: string): number {
-  return new BigNumber(weiAmount).div(weiSatsExchangeRate).integerValue().toNumber();
+  return new BigNumber(weiAmount)
+    .div(weiSatsExchangeRate)
+    .integerValue()
+    .toNumber()
 }
 
 function satsToWei(satsAmount: number, weiSatsExchangeRate: string): string {
-  return new BigNumber(satsAmount).times(weiSatsExchangeRate).toString();
+  return new BigNumber(satsAmount).times(weiSatsExchangeRate).toString()
 }
 
-
-
 export function buildWalletFromMnemonic(mnemonic: string): BitcoinWallet {
-  const network = bitcoin.networks.bitcoin;
-  const seed = bip39.mnemonicToSeedSync(mnemonic);
-  const root = HDKey.fromMasterSeed(seed);
-  const child = root.derive("m/84'/0'/0'/0/0");
-  const publicKey = Buffer.from(child.publicKey);
-  const {address} = bitcoin.payments.p2wpkh({pubkey: publicKey, network});
-  const unlockScript = bitcoin.payments.p2wpkh({pubkey: publicKey, network}).output!.toString('hex');
+  const network = bitcoin.networks.bitcoin
+  const seed = bip39.mnemonicToSeedSync(mnemonic)
+  const root = HDKey.fromMasterSeed(seed)
+  const child = root.derive("m/84'/0'/0'/0/0")
+  const publicKey = Buffer.from(child.publicKey)
+  const { address } = bitcoin.payments.p2wpkh({ pubkey: publicKey, network })
+  const unlockScript = bitcoin.payments
+    .p2wpkh({ pubkey: publicKey, network })
+    .output!.toString("hex")
   return {
     address,
     unlockScript,
-    publicKey: publicKey.toString('hex'),
-    hdKey: child 
-  };
+    publicKey: publicKey.toString("hex"),
+    hdKey: child
+  }
 }
 
 function reserializeNoSegwit(serializedTxn: string): string {
-    const txn = bitcoin.Transaction.fromHex(serializedTxn);
-    const txnWithoutWitness = new bitcoin.Transaction();
-    txnWithoutWitness.version = txn.version;
-    txn.ins.forEach(input => {
-        txnWithoutWitness.addInput(
-            input.hash,
-            input.index,
-            input.sequence,
-            input.script
-        );
-    });
-    txn.outs.forEach(output => {
-        txnWithoutWitness.addOutput(output.script, output.value);
-    });
-    txnWithoutWitness.locktime = txn.locktime;
-    return txnWithoutWitness.toHex();
+  const txn = bitcoin.Transaction.fromHex(serializedTxn)
+  const txnWithoutWitness = new bitcoin.Transaction()
+  txnWithoutWitness.version = txn.version
+  txn.ins.forEach((input) => {
+    txnWithoutWitness.addInput(
+      input.hash,
+      input.index,
+      input.sequence,
+      input.script
+    )
+  })
+  txn.outs.forEach((output) => {
+    txnWithoutWitness.addOutput(output.script, output.value)
+  })
+  txnWithoutWitness.locktime = txn.locktime
+  return txnWithoutWitness.toHex()
+}
+
+async function fetchFundingTxAmount(
+  inTxidHex: string,
+  inTxvout: number,
+  mempoolApiHostname: string
+) {
+  const serializedInputTransaction = await fetchSerializedTransactionData(
+    normalizeHexStr(inTxidHex),
+    mempoolApiHostname
+  )
+  const inputTransaction = bitcoin.Transaction.fromHex(
+    serializedInputTransaction
+  )
+
+  return inputTransaction.outs[inTxvout].value
 }
 
 // P2WPKH signing in bitcoinjs-lib
@@ -89,106 +116,166 @@ async function buildRiftPaymentTransaction(
   inTxidHex: string,
   inTxvout: number,
   wallet: BitcoinWallet,
-  mempoolApiHostname: string,
+  vinSats: number,
   feeSats: number
-): Promise<{txSerializedNoSegwit: string; txid: string; txSerialized: string}> {
-  const network =  bitcoin.networks.bitcoin;
+): Promise<{
+  txSerializedNoSegwit: string
+  txid: string
+  txSerialized: string
+}> {
+  const network = bitcoin.networks.bitcoin
 
-  const serializedInputTransaction = await fetchSerializedTransactionData(
-    normalizeHexStr(inTxidHex),
-    mempoolApiHostname
-  );
+  const totalLpSumBtc = liquidityProviders.reduce(
+    (sum, lp) => sum + weiToSatoshi(lp.amount, lp.btcExchangeRate),
+    0
+  )
 
-  const inputTransaction = bitcoin.Transaction.fromHex(serializedInputTransaction);
-
-  const totalLpSumBtc = liquidityProviders.reduce((sum, lp) =>
-    sum + weiToSatoshi(lp.amount, lp.btcExchangeRate), 0);
-  const vinSats = inputTransaction.outs[inTxvout].value;
-
-  const lpOutputs = liquidityProviders.map(lp => {
+  const lpOutputs = liquidityProviders.map((lp) => {
     return {
       value: weiToSatoshi(lp.amount, lp.btcExchangeRate),
-      script: Buffer.from(normalizeHexStr(lp.lockingScriptHex), 'hex')
-    };
-  });
+      script: Buffer.from(normalizeHexStr(lp.lockingScriptHex), "hex")
+    }
+  })
 
-  if ((vinSats - totalLpSumBtc - feeSats) < 0) {
-    throw new Error('Insufficient funds');
+  if (vinSats - totalLpSumBtc - feeSats < 0) {
+    throw new Error("Insufficient funds")
   }
 
   const inscription = {
     value: 0,
     script: Buffer.concat([
-      Buffer.from('6a20', 'hex'),
-      Buffer.from(normalizeHexStr(orderNonceHex), 'hex')
+      Buffer.from("6a20", "hex"),
+      Buffer.from(normalizeHexStr(orderNonceHex), "hex")
     ])
-  };
+  }
 
-  const psbt = new bitcoin.Psbt({network});
+  const psbt = new bitcoin.Psbt({ network })
   psbt.addInput({
     hash: normalizeHexStr(inTxidHex),
     index: inTxvout,
-    sequence: 0xFFFFFFFD,
+    sequence: 0xfffffffd,
     witnessUtxo: {
-      script: bitcoin.payments.p2wpkh({pubkey: Buffer.from(wallet.publicKey, 'hex'), network}).output!,
+      script: bitcoin.payments.p2wpkh({
+        pubkey: Buffer.from(wallet.publicKey, "hex"),
+        network
+      }).output!,
       value: vinSats
     }
-  });
-
-  [...lpOutputs, inscription].forEach(output => {
-    psbt.addOutput(output);
-  });
+  })
+  ;[...lpOutputs, inscription].forEach((output) => {
+    psbt.addOutput(output)
+  })
   psbt.signInput(0, {
-        publicKey: Buffer.from(wallet.publicKey, 'hex'),
-        sign: (hash: Buffer) => Buffer.from(wallet.hdKey.sign(hash))
-  });
+    publicKey: Buffer.from(wallet.publicKey, "hex"),
+    sign: (hash: Buffer) => Buffer.from(wallet.hdKey.sign(hash))
+  })
 
-  psbt.finalizeAllInputs();
+  psbt.finalizeAllInputs()
 
-  const tx = psbt.extractTransaction();
-  const txid = tx.getId();
-  const txHex =  normalizeHexStr(tx.toBuffer().toString('hex'));
+  const tx = psbt.extractTransaction()
+  const txid = tx.getId()
+  const txHex = normalizeHexStr(tx.toBuffer().toString("hex"))
 
   return {
     txSerializedNoSegwit: reserializeNoSegwit(txHex),
     txid,
     txSerialized: txHex
-  };
+  }
 }
 
-async function executeRiftSwapOnAvailableUTXO(swapData: CreateRiftSwapArgs, receiverMnemonic: string, mempoolApiHostname: string, internalSwapId: string): Promise<void> {
-  const wallet = buildWalletFromMnemonic(receiverMnemonic);
-  const {orderNonceHex, liquidityProviders} = swapData;
-  const swappedBtc = liquidityProviders.reduce((sum, lp) => sum + weiToSatoshi(lp.amount, lp.btcExchangeRate), 0);
+async function estimateRiftPaymentTransactionFees(
+  liquidityProviders: LiquidityProvider[],
+  wallet: BitcoinWallet,
+  mempoolApiHostname: string
+): Promise<RiftSwapFees> {
+  let arbitrary_bytes_32_hex =
+    "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+  let { txSerialized } = await buildRiftPaymentTransaction(
+    arbitrary_bytes_32_hex,
+    liquidityProviders,
+    arbitrary_bytes_32_hex,
+    0,
+    wallet,
+    2 ** 64,
+    0
+  )
+
+  const txn = bitcoin.Transaction.fromHex(txSerialized)
+  // standard byte size for nonsegwit, minimized byte weight applied for segwit
+  let virtualSize = txn.virtualSize()
+
+  let feeRateQuote = await getBtcFeeRates(mempoolApiHostname)
+
+  return {
+    virtualSize,
+    feeRateQuote,
+    fastTotalAmount: feeRateQuote.fastestFee * virtualSize,
+    standardTotalAmount: feeRateQuote.economyFee * virtualSize
+  }
+}
+
+async function executeRiftSwapOnAvailableUTXO(
+  swapData: CreateRiftSwapArgs,
+  receiverMnemonic: string,
+  mempoolApiHostname: string,
+  internalSwapId: string
+): Promise<void> {
+  const wallet = buildWalletFromMnemonic(receiverMnemonic)
+  const { orderNonceHex, liquidityProviders } = swapData
+  const swappedBtc = liquidityProviders.reduce(
+    (sum, lp) => sum + weiToSatoshi(lp.amount, lp.btcExchangeRate),
+    0
+  )
   // Wait for the UTXO to be available, max wait is the reservation duration
   for (let i = 0; i < MAX_RESERVATION_DURATION / UTXO_POLLING_INTERVAL; i++) {
-    // show minutes remaining 
-    console.log(`Polling for UTXO, ${MAX_RESERVATION_DURATION / 60 - i * UTXO_POLLING_INTERVAL / 60} minutes remaining`);
-    const utxos = await fetchAddressUTXOs(wallet.address, mempoolApiHostname);
-    const utilizedUtxo = utxos.find(utxo => utxo.value >= swappedBtc);
+    // show minutes remaining
+    console.log(
+      `Polling for UTXO, ${MAX_RESERVATION_DURATION / 60 - (i * UTXO_POLLING_INTERVAL) / 60} minutes remaining`
+    )
+    const utxos = await fetchAddressUTXOs(wallet.address, mempoolApiHostname)
+    const utilizedUtxo = utxos.find((utxo) => utxo.value >= swappedBtc)
     if (utilizedUtxo) {
-      console.log("Found available UTXO", utilizedUtxo);
-      const allocatedFees = utilizedUtxo.value - swappedBtc;
-      console.log("Available UTXO Bal", utilizedUtxo.value);
-      console.log("Allocated fees in sats:", allocatedFees);
-      console.log("Swapped BTC in sats:", swappedBtc);
+      console.log("Found available UTXO", utilizedUtxo)
+      const allocatedFees = utilizedUtxo.value - swappedBtc
+      console.log("Available UTXO Bal", utilizedUtxo.value)
+      console.log("Allocated fees in sats:", allocatedFees)
+      console.log("Swapped BTC in sats:", swappedBtc)
+      const vinSats = await fetchFundingTxAmount(
+        utilizedUtxo.txid,
+        utilizedUtxo.vout,
+        mempoolApiHostname
+      )
       const txDetails = await buildRiftPaymentTransaction(
         orderNonceHex,
         liquidityProviders,
         utilizedUtxo.txid,
         utilizedUtxo.vout,
         wallet,
-        mempoolApiHostname,
+        vinSats,
         allocatedFees
-      );
-      console.log("Built Rift Payment Transaction:", txDetails);
-      await broadcastTransaction(txDetails.txSerialized, mempoolApiHostname);
-      await storage.updateSwapStatus(internalSwapId, SwapStatus.PAYMENT_TRANSACTION_SENT, txDetails.txid);
-      console.log("Transaction broadcasted successfully");
-      return;
+      )
+      console.log("Built Rift Payment Transaction:", txDetails)
+      await broadcastTransaction(txDetails.txSerialized, mempoolApiHostname)
+      await storage.updateSwapStatus(
+        internalSwapId,
+        SwapStatus.PAYMENT_TRANSACTION_SENT,
+        txDetails.txid
+      )
+      console.log("Transaction broadcasted successfully")
+      return
     }
-    await new Promise(resolve => setTimeout(resolve, UTXO_POLLING_INTERVAL * 1000));
+    await new Promise((resolve) =>
+      setTimeout(resolve, UTXO_POLLING_INTERVAL * 1000)
+    )
   }
 }
 
-export {buildRiftPaymentTransaction, weiToSatoshi, satsToWei, LiquidityProvider, BitcoinWallet, executeRiftSwapOnAvailableUTXO};
+export {
+  buildRiftPaymentTransaction,
+  weiToSatoshi,
+  satsToWei,
+  LiquidityProvider,
+  BitcoinWallet,
+  executeRiftSwapOnAvailableUTXO,
+  estimateRiftPaymentTransactionFees
+}
