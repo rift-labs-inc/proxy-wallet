@@ -189,10 +189,16 @@ async function buildRiftPaymentTransaction(
 }
 
 async function estimateRiftPaymentTransactionFees(
-  liquidityProviders: LiquidityProvider[],
+  liquidityProviderCount: number,
   wallet: BitcoinWallet,
   mempoolApiHostname: string
 ): Promise<RiftSwapFees> {
+  let dummy_lp: LiquidityProvider = {
+    amount: "1000",
+    btcExchangeRate: "1",
+    lockingScriptHex: "001463dff5f8da08ca226ba01f59722c62ad9b9b3eaa"
+  }
+  let liquidityProviders = Array.from({ length: liquidityProviderCount }, () => dummy_lp)
   let arbitrary_bytes_32_hex = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
   let { txSerialized } = await buildRiftPaymentTransaction(
     arbitrary_bytes_32_hex,
@@ -207,7 +213,6 @@ async function estimateRiftPaymentTransactionFees(
   const txn = bitcoin.Transaction.fromHex(txSerialized)
   // standard byte size for nonsegwit, minimized byte weight applied for segwit
   let virtualSize = txn.virtualSize()
-
 
   let feeRateQuote = await getBtcFeeRates(mempoolApiHostname)
 

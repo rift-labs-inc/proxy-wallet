@@ -44,7 +44,7 @@ export const RiftApi = {
     let wallet = buildWalletFromMnemonic(mnemonic)
 
     return await estimateRiftPaymentTransactionFees(
-      args.liquidityProviders,
+      args.lps,
       wallet,
       MEMPOOL_HOST
     )

@@ -32,7 +32,7 @@ export interface LiquidityProvider {
 }
 
 export interface GetRiftSwapFeesArgs {
-  liquidityProviders: Array<LiquidityProvider>
+  lps: number 
 }
 
 export interface RiftSwapFees {
