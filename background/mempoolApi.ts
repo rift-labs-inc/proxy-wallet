@@ -20,22 +20,36 @@ export async function fetchAddressUTXOs(
   }
 }
 
-export async function getBtcFeeRates(hostname: string): Promise<Fees> {
-  const endpoint = `${hostname}/api/v1/fees/recommended`
+let cachedFees: Fees | null = null;
+let lastFetchTime: number = 0;
+const CACHE_DURATION = 10000;
 
+export async function getBtcFeeRates(hostname: string): Promise<Fees> {
+  const currentTime = Date.now();
+  
+  // If we have cached data and it's less than 10 seconds old, return it
+  if (cachedFees && (currentTime - lastFetchTime < CACHE_DURATION)) {
+    return cachedFees;
+  }
+
+  const endpoint = `${hostname}/api/v1/fees/recommended`;
   try {
-    const response = await fetch(endpoint)
+    const response = await fetch(endpoint);
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    const data: Fees = await response.json()
-    return data
+    const data: Fees = await response.json();
+    
+    // Update the cache and last fetch time
+    cachedFees = data;
+    lastFetchTime = currentTime;
+    
+    return data;
   } catch (error) {
-    console.error("Error fetching Fees:", error)
-    throw error
+    console.error("Error fetching Fees:", error);
+    throw error;
   }
 }
-
 export async function fetchSerializedTransactionData(
   txid: string,
   hostname: string
