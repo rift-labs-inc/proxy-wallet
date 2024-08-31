@@ -55,7 +55,8 @@ export interface GetRiftSwapStatusArgs {
 // enum
 export enum SwapStatus {
   WAITING_FOR_FUNDING_TRANSACTION = 0,
-  PAYMENT_TRANSACTION_SENT = 1
+  PAYMENT_TRANSACTION_SENT = 1,
+  IN_MEMPOOL = 2
 }
 
 export interface ProxyWalletStatus {

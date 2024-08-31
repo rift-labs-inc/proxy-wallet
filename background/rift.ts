@@ -51,11 +51,10 @@ export const RiftApi = {
   },
 
   async createRiftSwap(args: CreateRiftSwapArgs): Promise<ProxyWalletStatus> {
-    const id = crypto.randomUUID()
     const newSwap = {
       ...args,
       status: SwapStatus.WAITING_FOR_FUNDING_TRANSACTION,
-      id,
+      id: args.orderNonceHex,
       paymentTxid: ""
     }
 
