@@ -79,7 +79,7 @@ export async function broadcastTransaction(
       body: txHex
     })
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
+      throw new Error(`HTTP error! response: ${await response.text()}, status: ${response.status}`)
     }
     console.log("Transaction broadcasted successfully")
   } catch (error) {

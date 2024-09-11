@@ -51,6 +51,7 @@ export const RiftApi = {
   },
 
   async createRiftSwap(args: CreateRiftSwapArgs): Promise<ProxyWalletStatus> {
+    console.log("Creating rift swap with args:", args)
     const newSwap = {
       ...args,
       status: SwapStatus.WAITING_FOR_FUNDING_TRANSACTION,
@@ -63,6 +64,7 @@ export const RiftApi = {
     await storage.setSwaps(swaps)
 
     const { mnemonic } = await _getProxyWallet()
+    console.log("Waiting for rift swap on available UTXO")
     // TODO: Grab a custom mempool host if the user provided one in options
     // This is purposefully not being awaited because this function is meant to be fire-and-forget
     executeRiftSwapOnAvailableUTXO(args, mnemonic, MEMPOOL_HOST, newSwap.id)

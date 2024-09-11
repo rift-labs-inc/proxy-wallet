@@ -38,7 +38,8 @@
       "http://*/*"
     ],
     "permissions": [
-      "scripting"
+      "scripting",
+      "unlimitedStorage"
     ]
   }
 }

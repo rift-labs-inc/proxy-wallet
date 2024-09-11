@@ -1,11 +1,10 @@
-import { SecureStorage } from "@plasmohq/storage/secure";
+import { Storage } from "@plasmohq/storage";
 import { SwapStatus } from "./types";
 
-const ARBITRARY_PASSWORD = "rift-exchange";
-
-async function getStorage(): Promise<SecureStorage> {
-  const storage = new SecureStorage();
-  await storage.setPassword(ARBITRARY_PASSWORD);
+async function getStorage(): Promise<Storage> {
+  const storage = new Storage({
+    area: "local"
+  })
   return storage;
 }
 
