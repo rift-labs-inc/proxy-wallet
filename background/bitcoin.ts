@@ -45,6 +45,7 @@ function normalizeHexStr(hex: string): string {
 }
 
 function weiToSatoshi(weiAmount: string, weiSatsExchangeRate: string): number {
+  BigNumber.config({  ROUNDING_MODE: BigNumber.ROUND_DOWN })
   return new BigNumber(weiAmount)
     .div(weiSatsExchangeRate)
     .integerValue()
