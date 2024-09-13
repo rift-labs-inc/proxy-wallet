@@ -21,16 +21,16 @@ import {
 
 const ec = new EC("secp256k1")
 
-export function generateP2WPKH(existingMnemonic = null) {
+export function generateP2WPKH(orderNonceHex: string) {
   const network = bitcoin.networks.bitcoin
-  const mnemonic = existingMnemonic || bip39.generateMnemonic()
+  const mnemonic = bip39.generateMnemonic()
   const seed = bip39.mnemonicToSeedSync(mnemonic)
   const root = HDKey.fromMasterSeed(seed)
   const child = root.derive("m/84'/0'/0'/0/0")
   const publicKey = Buffer.from(child.publicKey)
   const privateKey = Buffer.from(child.privateKey).toString("hex")
   const { address } = bitcoin.payments.p2wpkh({ pubkey: publicKey, network })
-  return { mnemonic, address, privateKey }
+  return { mnemonic, address, privateKey, associatedOrderNonceHex: orderNonceHex }
 }
 
 interface BitcoinWallet {

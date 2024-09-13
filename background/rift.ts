@@ -19,28 +19,31 @@ import {
 
 const MEMPOOL_HOST = "https://mempool.space"
 
-async function _getProxyWallet(): Promise<{
+async function _getProxyWallet(orderNonceHex: string): Promise<{
   address: string
   privateKey: string
   mnemonic: string
 }> {
-  let wallet = await storage.getWallet()
-  if (!wallet) {
-    wallet = generateP2WPKH()
-    await storage.setWallet(wallet)
+
+  const wallet = await storage.getWalletFromOrderNonce(orderNonceHex);
+  if (wallet) {
+    return wallet;
   }
-  return wallet
+  // otherwise generate new
+  const newWallet = generateP2WPKH(orderNonceHex);
+  await storage.addWallet(newWallet)
+  return newWallet 
 }
 
 export const RiftApi = {
   async getProxyWallet(
     args: GetProxyWalletArgs
   ): Promise<GetProxyWalletResponse> {
-    return { address: (await _getProxyWallet()).address }
+    return { address: (await _getProxyWallet(args.orderNonceHex)).address }
   },
 
   async getRiftSwapFees(args: GetRiftSwapFeesArgs): Promise<RiftSwapFees> {
-    const { mnemonic } = await _getProxyWallet()
+    const mnemonic = "ladder crystal wool wheat fossil large unable firm vicious index index outer";
     let wallet = buildWalletFromMnemonic(mnemonic)
 
     return await estimateRiftPaymentTransactionFees(
@@ -63,7 +66,7 @@ export const RiftApi = {
     swaps.push(newSwap)
     await storage.setSwaps(swaps)
 
-    const { mnemonic } = await _getProxyWallet()
+    const { mnemonic } = await _getProxyWallet(args.orderNonceHex)
     console.log("Waiting for rift swap on available UTXO")
     // TODO: Grab a custom mempool host if the user provided one in options
     // This is purposefully not being awaited because this function is meant to be fire-and-forget

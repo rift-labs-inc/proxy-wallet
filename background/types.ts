@@ -20,7 +20,9 @@ export interface Fees {
   minimumFee: number
 }
 
-export interface GetProxyWalletArgs {}
+export interface GetProxyWalletArgs {
+  orderNonceHex: string
+}
 export interface GetProxyWalletResponse {
   address: string
 }

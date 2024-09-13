@@ -8,15 +8,22 @@ async function getStorage(): Promise<Storage> {
   return storage;
 }
 
-export async function getWallet(): Promise<{ address: string; privateKey: string; mnemonic: string } | null> {
-  const storage = await getStorage();
-  const wallet = await storage.get("wallet");
-  return wallet ? JSON.parse(wallet) : null;
+export async function getWalletFromOrderNonce(orderNonceHex: string): Promise<{ address: string; privateKey: string; mnemonic: string, associatedOrderNonceHex: string }> {
+  const wallets = await getWallets();
+  return wallets.find((wallet) => wallet.address === orderNonceHex);
 }
 
-export async function setWallet(wallet: { address: string; privateKey: string; mnemonic: string }): Promise<void> {
+export async function getWallets(): Promise<[{ address: string; privateKey: string; mnemonic: string, associatedOrderNonceHex: string }]> {
   const storage = await getStorage();
-  await storage.set("wallet", JSON.stringify(wallet));
+  const wallets = await storage.get("wallets");
+  return wallets ? JSON.parse(wallets) : [];
+}
+
+export async function addWallet(wallet: { address: string; privateKey: string; mnemonic: string, associatedOrderNonceHex: string } ): Promise<void> {
+  const storage = await getStorage();
+  const wallets = await getWallets();
+  wallets.push(wallet);
+  await storage.set("wallets", JSON.stringify(wallets));
 }
 
 export async function getSwaps(): Promise<any[]> {
