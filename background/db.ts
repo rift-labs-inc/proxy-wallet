@@ -10,7 +10,7 @@ async function getStorage(): Promise<Storage> {
 
 export async function getWalletFromOrderNonce(orderNonceHex: string): Promise<{ address: string; privateKey: string; mnemonic: string, associatedOrderNonceHex: string }> {
   const wallets = await getWallets();
-  return wallets.find((wallet) => wallet.address === orderNonceHex);
+  return wallets.find((wallet) => wallet.associatedOrderNonceHex === orderNonceHex);
 }
 
 export async function getWallets(): Promise<[{ address: string; privateKey: string; mnemonic: string, associatedOrderNonceHex: string }]> {
