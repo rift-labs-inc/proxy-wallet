@@ -17,7 +17,7 @@ import {
   SwapStatus
 } from "./types"
 
-const MEMPOOL_HOST = "https://mempool.space"
+export const MEMPOOL_HOST = "https://mempool.space"
 
 async function _getProxyWallet(orderNonceHex: string): Promise<{
   address: string

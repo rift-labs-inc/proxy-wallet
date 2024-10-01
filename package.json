@@ -2,7 +2,7 @@
   "name": "rift-proxy-wallet",
   "displayName": "Rift Proxy Wallet",
   "version": "0.0.1",
-  "description": "Swap trustlessly between bitcoin and ethereum with minimal friction",
+  "description": "Bitcoin wallet used to power Rift, a cross-chain DEX",
   "author": "cliff@rift.exchange",
   "scripts": {
     "dev": "plasmo dev",

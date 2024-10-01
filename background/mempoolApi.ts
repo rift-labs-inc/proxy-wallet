@@ -1,4 +1,20 @@
-import { Fees, UTXO } from "./types"
+import { Fees, UTXO, BalanceResponse } from "./types"
+
+export async function getAddress(address: string, hostname: string): Promise<BalanceResponse> {
+  const endpoint = `${hostname}/api/address/${address}`
+
+  try {
+    const response = await fetch(endpoint)
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    const data: BalanceResponse = await response.json();
+    return data
+  } catch (error) {
+    console.error("Error fetching balance:", error)
+    throw error
+  }
+}
 
 export async function fetchAddressUTXOs(
   address: string,
