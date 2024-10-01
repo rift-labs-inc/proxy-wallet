@@ -9,7 +9,6 @@ const IndexPopup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [dumpAddress, setDumpAddress] = useState("");
   const [satsBalance, setSatsBalance] = useState(0);
-  console.log("RIFT RIFT Popup mounted");
 
   const handleDownload = async () => {
     setIsLoading(true);
@@ -34,7 +33,6 @@ const IndexPopup = () => {
 
   const aggregateWalletBal = async () => {
     const wallets = await getWallets();
-    console.log("Wallets:", wallets);
     let address_states = await Promise.all(wallets.map(async (wallet) => {
       let address_state = await getAddress(wallet.address, MEMPOOL_HOST);
       console.log("Address state:", address_state);
@@ -51,7 +49,6 @@ const IndexPopup = () => {
   }
 
   useEffect(() => {
-    console.log("RIFT RIFT Popup mounted");
     aggregateWalletBal();
   }, [])
 

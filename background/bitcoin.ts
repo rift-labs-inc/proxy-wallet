@@ -235,16 +235,12 @@ async function executeRiftSwapOnAvailableUTXO(
   mempoolApiHostname: string,
   internalSwapId: string
 ): Promise<void> {
-  console.log("bp1")
   const wallet = buildWalletFromMnemonic(receiverMnemonic)
-  console.log("bp1")
   const { orderNonceHex, liquidityProviders } = swapData
   const swappedBtc = liquidityProviders.reduce(
     (sum, lp) => sum + weiToSatoshi(lp.amount, lp.btcExchangeRate),
     0
   )
-
-  console.log("bp1")
   // Wait for the UTXO to be available, max wait is the reservation duration
   for (let i = 0; i < MAX_RESERVATION_DURATION / UTXO_POLLING_INTERVAL; i++) {
     // show minutes remaining
